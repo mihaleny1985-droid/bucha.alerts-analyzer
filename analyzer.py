@@ -1,45 +1,13 @@
-import pandas as pd
-import requests
-import matplotlib.pyplot as plt
+import requests, matplotlib.pyplot as plt
+from datetime import datetime
 
-REGION_NAME = "Бучанський район"
+r = requests.get("https://alerts.in.ua", timeout=10).text
+lines = [l for l in r.splitlines() if "Бучан" in l or "Київська" in l]
+active = bool(lines)
+print("ТРИВОГА!" if active else "ВІДБІЙ / СПОКІЙНО", "\n".join(lines))
 
-def fetch_alerts_data():
-    data = {
-        "date": [
-            "2026-11-20", "2026-11-20", "2026-11-21",
-            "2026-11-22", "2026-11-23", "2026-11-23", "2026-11-24"
-        ],
-        "duration_minutes": list((45, 120, 30, 85, 60, 15, 95)),
-        "alert_type": ["Повітряна тривога"] * 7
-    }
-    return pd.DataFrame(data)
-
-def analyze_and_plot(df):
-    df["date"] = pd.to_datetime(df["date"])
-    
-    total_alerts = len(df)
-    total_minutes = df["duration_minutes"].sum()
-    avg_duration = df["duration_minutes"].mean()
-    
-    print(f"--- Статистика: {REGION_NAME} ---")
-    print(f"Всього тривог: {total_alerts}")
-    print(f"Загальна тривалість: {total_minutes} хв ({total_minutes / 60:.1f} год)")
-    print(f"Середня тривалість: {avg_duration:.1f} хв")
-    
-    daily_stats = df.groupby("date")["duration_minutes"].sum()
-    
-    plt.figure(figsize=(10, 5))
-    daily_stats.plot(kind="bar", color="#d9534f")
-    plt.title(f"Тривалість повітряних тривог по днях ({REGION_NAME})")
-    plt.xlabel("Дата")
-    plt.ylabel("Тривалість (хвилини)")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    
-    plt.savefig("bucha_alerts_chart.png")
-    print("Графік збережено у файл 'bucha_alerts_chart.png'")
-
-if name == "main":
-    df_alerts = fetch_alerts_data()
-    analyze_and_plot(df_alerts)
+plt.figure(figsize=(8, 4))
+plt.bar(["Буча"], list((1,)), color="#d9534f" if active else "#5cb85c")
+plt.title(f"Статус на {datetime.now().strftime('%H:%M %d.%m.%Y')}: {'ТРИВОГА' if active else 'СПОКІЙНО'}")
+plt.yticks([])
+plt.savefig("bucha_alerts_chart.png")
